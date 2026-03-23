@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>~/startpage</title>
+  <title>//startpage</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
@@ -151,6 +151,51 @@
     a.ticker-link:hover { color: var(--reddit); text-shadow: 0 0 8px var(--reddit); }
     .ticker-sep { color: rgba(255,69,0,0.3); padding: 0 16px; font-size: 0.72em; }
 
+    /* Edit mode */
+    .edit-input {
+      background: rgba(0,255,156,0.05); border: 1px solid rgba(0,255,156,0.2);
+      border-radius: 3px; color: #c0c0d0; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72em; padding: 2px 5px; outline: none; min-width: 0;
+    }
+    .edit-input:focus { border-color: rgba(0,255,156,0.5); }
+    .edit-x {
+      color: rgba(255,80,80,0.5); background: none; border: none; cursor: pointer;
+      font-size: 0.9em; padding: 0 2px; flex-shrink: 0; line-height: 1;
+      transition: color 0.15s;
+    }
+    .edit-x:hover { color: #ff5050; }
+    .edit-pencil {
+      color: rgba(0,255,156,0.3); background: none; border: none; cursor: pointer;
+      font-size: 0.72em; padding: 0 2px; flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .edit-pencil:hover { color: var(--green); }
+    .edit-confirm {
+      color: rgba(0,255,156,0.5); background: none; border: none; cursor: pointer;
+      font-size: 0.82em; padding: 0 3px; flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .edit-confirm:hover { color: var(--green); }
+    .edit-add-link {
+      color: rgba(0,255,156,0.35); background: none;
+      border: 1px dashed rgba(0,255,156,0.2); border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.68em;
+      padding: 2px 6px; cursor: pointer; width: 100%;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .edit-add-link:hover { color: var(--green); border-color: rgba(0,255,156,0.5); }
+    #edit-toggle {
+      font-size: 0.65em; color: rgba(0,255,156,0.4); background: none;
+      border: 1px solid rgba(0,255,156,0.2); border-radius: 4px;
+      padding: 3px 10px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.1em; transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    #edit-toggle:hover, #edit-toggle.active {
+      color: var(--green); border-color: rgba(0,255,156,0.5);
+      box-shadow: 0 0 8px rgba(0,255,156,0.2);
+    }
+    .cards-edit a.link { pointer-events: none; cursor: default; }
+
     /* Links */
     a.link {
       color: #606070; font-size: 0.88em; text-decoration: none;
@@ -164,7 +209,7 @@
   <div class="relative z-10 flex flex-col items-center w-full max-w-5xl gap-2">
 
     <!-- Logo -->
-    <img src="TL.png" alt="TeezLabs" class="h-16 w-16">
+    <img src="TL-Green.png" alt="TeezLabs" class="h-40 w-40">
 
     <!-- Greeting -->
     <h1 class="text-2xl font-bold tracking-wider neon-green">「 Hello Teez 」</h1>
@@ -185,67 +230,12 @@
       >Go</button>
     </form>
 
-    <!-- Link categories -->
-    <div class="flex flex-wrap gap-3 justify-center w-full mt-4">
+    <!-- Link categories (rendered by JS) -->
+    <div id="cards-container" class="flex flex-wrap gap-3 justify-center w-full mt-4"></div>
 
-      <div class="card rounded-xl p-3 min-w-[140px]">
-        <div class="text-xs neon-blue tracking-wide mb-2 pb-1.5 border-b border-[#151520] relative z-10">~/general</div>
-        <ul class="space-y-1 relative z-10">
-          <li><a class="link" href="https://plex.tv" target="_blank">Plex</a></li>
-          <li><a class="link" href="https://gmail.com/" target="_blank">Gmail</a></li>
-          <li><a class="link" href="https://twitch.tv" target="_blank">Twitch</a></li>
-          <li><a class="link" href="https://youtube.com" target="_blank">YouTube</a></li>
-          <li><a class="link" href="https://soundcloud.com" target="_blank">Soundcloud</a></li>
-        </ul>
-      </div>
-
-      <div class="card rounded-xl p-3 min-w-[140px]">
-        <div class="text-xs neon-blue tracking-wide mb-2 pb-1.5 border-b border-[#151520] relative z-10">~/dev</div>
-        <ul class="space-y-1 relative z-10">
-          <li><a class="link" href="https://aur.archlinux.org/" target="_blank">AUR</a></li>
-          <li><a class="link" href="https://github.com/teezlabs?tab=repositories" target="_blank">GitHub</a></li>
-          <li><a class="link" href="https://vercel.com" target="_blank">Vercel</a></li>
-          <li><a class="link" href="https://github.com/teezlabs/dotfiles" target="_blank">Dotfiles</a></li>
-          <li><a class="link" href="https://supabase.com" target="_blank">Supabase</a></li>
-        </ul>
-      </div>
-
-      <div class="card rounded-xl p-3 min-w-[140px]">
-        <div class="text-xs neon-blue tracking-wide mb-2 pb-1.5 border-b border-[#151520] relative z-10">~/random</div>
-        <ul class="space-y-1 relative z-10">
-          <li><a class="link" href="https://claude.ai" target="_blank">Claude</a></li>
-          <li><a class="link" href="https://chatgpt.com" target="_blank">ChatGPT</a></li>
-          <li><a class="link" href="https://flathub.org/en" target="_blank">FlatHub</a></li>
-          <li><a class="link" href="https://wiki.hypr.land" target="_blank">Hyprland</a></li>
-          <li><a class="link" href="https://excalidraw.com" target="_blank">Excalidraw</a></li>
-        </ul>
-      </div>
-
-      <div class="card rounded-xl p-3 min-w-[140px]">
-        <div class="text-xs neon-blue tracking-wide mb-2 pb-1.5 border-b border-[#151520] relative z-10">~/reddit</div>
-        <ul class="space-y-1 relative z-10">
-          <li><a class="link" href="https://reddit.com/" target="_blank">reddit.com</a></li>
-          <li><a class="link" href="https://reddit.com/r/hyprland/" target="_blank">r/hyprland</a></li>
-          <li><a class="link" href="https://reddit.com/r/unixporn/" target="_blank">r/unixporn</a></li>
-          <li><a class="link" href="https://reddit.com/r/archlinux/" target="_blank">r/archlinux</a></li>
-        </ul>
-      </div>
-
-      <div class="card rounded-xl p-3 min-w-[140px]">
-        <div class="text-xs neon-blue tracking-wide mb-2 pb-1.5 border-b border-[#151520] relative z-10">~/homelab</div>
-        <ul class="space-y-1 relative z-10">
-          <li><a class="link" href="https://n8n.home" target="_blank">N8n</a></li>
-          <li><a class="link" href="https://namecheap.com" target="_blank">NameCheap</a></li>
-          <li><a class="link" href="https://login.tailscale.com" target="_blank">Tailscale</a></li>
-          <li><a class="link" href="https://teez.labs" target="_blank">TeezLabs</a></li>
-          <li><a class="link" href="https://cloudflare.com/" target="_blank">Cloudflare</a></li>
-        </ul>
-      </div>
-
-    </div>
-
-    <!-- Feed toggle -->
-    <div class="w-full flex justify-end">
+    <!-- Toolbar -->
+    <div class="w-full flex justify-end gap-2">
+<button id="edit-toggle" onclick="toggleEdit()">✎ EDIT</button>
       <button id="feed-toggle" class="feed-toggle" onclick="toggleFeed()">▶ FEED</button>
     </div>
 
