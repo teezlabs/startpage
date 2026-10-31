@@ -187,7 +187,7 @@ function makeLinkRow(ci, li, link, total) {
     item.appendChild(pencil);
     item.appendChild(del);
   } else {
-    item.innerHTML = `<a class="link" href="${link.url}" target="_blank">${link.name}</a>`;
+    item.innerHTML = `<a class="link" href="${link.url}">${link.name}</a>`;
   }
   return item;
 }
@@ -278,7 +278,7 @@ async function loadRedditTicker() {
   const posts = data.data.children.map(c => c.data);
   const el = document.getElementById('ticker-inner');
   el.innerHTML = posts.map(p =>
-    `<a class="ticker-link" href="https://reddit.com${p.permalink}" target="_blank">${p.title}</a><span class="ticker-sep">///</span>`
+    `<a class="ticker-link" href="https://reddit.com${p.permalink}">${p.title}</a><span class="ticker-sep">///</span>`
   ).join('');
 }
 loadRedditTicker();
