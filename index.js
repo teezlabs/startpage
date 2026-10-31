@@ -64,6 +64,8 @@ function saveData() { localStorage.setItem('startpage-data', JSON.stringify(data
 
 let data = loadData();
 let editMode = false;
+let dragCardIndex = null;
+let firstRender = true;
 
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -72,10 +74,22 @@ function renderCards() {
   container.innerHTML = '';
   container.classList.toggle('cards-edit', editMode);
 
+  // Stagger the cards in on first paint only, so edits don't replay it.
+  if (firstRender) {
+    firstRender = false;
+    container.classList.add('cards-enter');
+    setTimeout(() => container.classList.remove('cards-enter'), 1000);
+  }
+
   data.forEach((card, ci) => {
     const wrap = document.createElement('div');
     wrap.className = 'card';
     wrap.style.cssText = 'border-radius:12px;padding:12px;min-width:140px;';
+    if (editMode) {
+      wrap.ondragover  = (e) => cardDragOver(e, ci, wrap);
+      wrap.ondragleave = () => wrap.classList.remove('drop-before', 'drop-after');
+      wrap.ondrop      = (e) => cardDrop(e, ci, wrap);
+    }
 
     // Title
     const titleRow = document.createElement('div');
@@ -85,16 +99,42 @@ function renderCards() {
       titleRow.style.display = 'flex';
       titleRow.style.alignItems = 'center';
       titleRow.style.gap = '4px';
+      const grip = document.createElement('span');
+      grip.className = 'drag-handle';
+      grip.textContent = '\u2807';
+      grip.title = 'Drag to reorder';
+      grip.draggable = true;
+      grip.ondragstart = (e) => startCardDrag(e, ci, wrap);
+      grip.ondragend = endCardDrag;
       const inp = document.createElement('input');
       inp.value = card.title;
       inp.className = 'edit-input';
       inp.style.width = '100%';
       inp.onchange = () => { data[ci].title = inp.value; saveData(); };
+      const prev = document.createElement('button');
+      prev.type = 'button';
+      prev.textContent = '\u2039';
+      prev.className = 'edit-pencil';
+      prev.title = 'Move left';
+      prev.style.opacity = ci === 0 ? '0.2' : '1';
+      prev.disabled = ci === 0;
+      prev.onclick = () => moveCard(ci, -1);
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.textContent = '\u203a';
+      next.className = 'edit-pencil';
+      next.title = 'Move right';
+      next.style.opacity = ci === data.length - 1 ? '0.2' : '1';
+      next.disabled = ci === data.length - 1;
+      next.onclick = () => moveCard(ci, 1);
       const del = document.createElement('button');
       del.textContent = '×';
       del.className = 'edit-x';
       del.onclick = () => { data.splice(ci, 1); saveData(); renderCards(); };
+      titleRow.appendChild(grip);
       titleRow.appendChild(inp);
+      titleRow.appendChild(prev);
+      titleRow.appendChild(next);
       titleRow.appendChild(del);
     } else {
       titleRow.textContent = card.title;
@@ -138,6 +178,22 @@ function renderCards() {
     btn.className = 'edit-add-link';
     btn.textContent = '+ card';
     btn.onclick = () => { data.push({ title: '//new', links: [] }); saveData(); renderCards(); };
+    addWrap.ondragover = (e) => {
+      if (dragCardIndex === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      clearDropMarks();
+      addWrap.classList.add('drop-before');
+    };
+    addWrap.ondragleave = () => addWrap.classList.remove('drop-before');
+    addWrap.ondrop = (e) => {
+      if (dragCardIndex === null) return;
+      e.preventDefault();
+      const from = dragCardIndex;
+      endCardDrag();
+      data.push(data.splice(from, 1)[0]);
+      saveData(); renderCards();
+    };
     addWrap.appendChild(btn);
     container.appendChild(addWrap);
   }
@@ -190,6 +246,68 @@ function makeLinkRow(ci, li, link, total) {
     item.innerHTML = `<a class="link" href="${link.url}">${link.name}</a>`;
   }
   return item;
+}
+
+// ── Card reordering ───────────────────────────────────────────────────────────
+function moveCard(ci, dir) {
+  const target = ci + dir;
+  if (target < 0 || target >= data.length) return;
+  [data[ci], data[target]] = [data[target], data[ci]];
+  saveData();
+  renderCards();
+}
+
+function clearDropMarks() {
+  document.querySelectorAll('#cards-container .card').forEach(c =>
+    c.classList.remove('drop-before', 'drop-after'));
+}
+
+function startCardDrag(e, ci, el) {
+  dragCardIndex = ci;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(ci));
+  if (e.dataTransfer.setDragImage) {
+    e.dataTransfer.setDragImage(el, el.offsetWidth / 2, 14);
+  }
+  requestAnimationFrame(() => el.classList.add('dragging'));
+}
+
+function endCardDrag() {
+  dragCardIndex = null;
+  document.querySelectorAll('#cards-container .card').forEach(c =>
+    c.classList.remove('dragging', 'drop-before', 'drop-after'));
+}
+
+// Cards wrap in a row on desktop and stack in a 2-col grid on mobile,
+// so the insertion side follows the axis the layout actually uses.
+function dropsAfter(e, el) {
+  const r = el.getBoundingClientRect();
+  return window.innerWidth < 768
+    ? e.clientY > r.top + r.height / 2
+    : e.clientX > r.left + r.width / 2;
+}
+
+function cardDragOver(e, ci, el) {
+  if (dragCardIndex === null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  clearDropMarks();
+  if (ci === dragCardIndex) return;
+  el.classList.add(dropsAfter(e, el) ? 'drop-after' : 'drop-before');
+}
+
+function cardDrop(e, ci, el) {
+  if (dragCardIndex === null) return;
+  e.preventDefault();
+  const from = dragCardIndex;
+  let to = ci + (dropsAfter(e, el) ? 1 : 0);
+  endCardDrag();
+  if (from === ci) return;
+  const [moved] = data.splice(from, 1);
+  if (to > from) to--;
+  data.splice(to, 0, moved);
+  saveData();
+  renderCards();
 }
 
 function moveLink(ci, li, dir) {
@@ -282,3 +400,28 @@ async function loadRedditTicker() {
   ).join('');
 }
 loadRedditTicker();
+
+// ── Live wallpaper color sync ───────────────────────────────────────────────────
+async function refreshWallpaperColors() {
+  try {
+    const res = await fetch(`colors.css?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const css = await res.text();
+    const vars = {};
+    for (const match of css.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+      vars[match[1]] = match[2].trim();
+    }
+    for (const [name, value] of Object.entries(vars)) {
+      document.documentElement.style.setProperty(`--${name}`, value);
+    }
+  } catch (e) {
+    // colors.css may not exist yet (wallpaper sync not set up) - ignore
+  }
+}
+refreshWallpaperColors();
+setInterval(refreshWallpaperColors, 2000);
+// Catch a wallpaper change made while the tab was hidden or unfocused.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshWallpaperColors();
+});
+window.addEventListener('focus', refreshWallpaperColors);
